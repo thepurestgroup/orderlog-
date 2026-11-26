@@ -1,0 +1,537 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Packaging order log</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#E9EDEC; --surface:#FFFFFF; --ink:#1E2A2F; --muted:#5E6B70; --line:#D3DADA;
+  --kraft:#A8723A; --kraft-soft:#F1E4D3; --teal:#2C6B66; --teal-soft:#DCEBE9;
+  --warn:#9A5B00; --warn-soft:#FBEBCF; --bad:#A33A2C; --bad-soft:#F7DEDA;
+  color-scheme: light;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#161C1E; --surface:#1F272A; --ink:#E6ECEC; --muted:#9AA7AB; --line:#334045;
+    --kraft:#D49B5E; --kraft-soft:#3A2E22; --teal:#6FB8B0; --teal-soft:#1F3634;
+    --warn:#E8B45A; --warn-soft:#3A2F1A; --bad:#EE8B7C; --bad-soft:#3D2420;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#161C1E; --surface:#1F272A; --ink:#E6ECEC; --muted:#9AA7AB; --line:#334045;
+  --kraft:#D49B5E; --kraft-soft:#3A2E22; --teal:#6FB8B0; --teal-soft:#1F3634;
+  --warn:#E8B45A; --warn-soft:#3A2F1A; --bad:#EE8B7C; --bad-soft:#3D2420;
+  color-scheme: dark;
+}
+*,*::before,*::after{box-sizing:inherit}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"Archivo",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;font-size:15px;line-height:1.45}
+button,input,select,textarea{font:inherit;color:inherit}
+.wrap{max-width:1180px;margin:0 auto;padding:20px 18px 48px}
+header.top{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:14px;margin-bottom:18px}
+h1{font-size:30px;font-weight:800;letter-spacing:-.02em;margin:0;line-height:1.1}
+.sub{color:var(--muted);margin:4px 0 0}
+.actions{display:flex;gap:8px;flex-wrap:wrap}
+.btn{border:1px solid var(--line);background:var(--surface);padding:9px 14px;border-radius:8px;cursor:pointer;font-weight:600}
+.btn:hover{border-color:var(--muted)}
+.btn.primary{background:var(--kraft);border-color:var(--kraft);color:#fff}
+.btn.primary:hover{filter:brightness(1.07)}
+.btn.ghost{background:transparent;border-color:transparent;color:var(--muted);padding:6px 8px}
+.btn.ghost:hover{color:var(--ink)}
+.btn.danger{color:var(--bad)}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+:focus-visible{outline:2px solid var(--teal);outline-offset:2px}
+.banner{background:var(--warn-soft);color:var(--warn);border-radius:8px;padding:10px 14px;margin-bottom:14px;font-size:14px}
+.banner[hidden]{display:none}
+
+/* Year strip: the signature element — a run of month "tape strips" */
+.year{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:16px 18px 14px;margin-bottom:16px}
+.year-head{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:baseline;gap:10px;margin-bottom:12px}
+.year-total{font-size:28px;font-weight:800;letter-spacing:-.01em}
+.year-total small{font-size:14px;font-weight:500;color:var(--muted);margin-left:6px}
+.year-pick{display:flex;align-items:center;gap:6px}
+.year-pick select{border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:6px 10px}
+.months{display:grid;grid-template-columns:repeat(12,1fr);gap:6px;align-items:end;height:120px}
+.m{display:flex;flex-direction:column;align-items:stretch;justify-content:flex-end;height:100%;border:0;background:none;padding:0;cursor:pointer;gap:4px}
+.m .bar{background:var(--kraft-soft);border-radius:4px 4px 2px 2px;min-height:3px;position:relative;transition:background .15s}
+.m .bar::after{content:"";position:absolute;left:0;right:0;top:40%;height:5px;background:var(--kraft);opacity:.35}
+.m.has .bar{background:var(--kraft)}
+.m.has .bar::after{background:#fff;opacity:.25}
+.m .lbl{font-size:12px;color:var(--muted);text-align:center}
+.m .amt{font-size:11px;color:var(--muted);text-align:center;min-height:14px}
+.m.sel .lbl{color:var(--ink);font-weight:700}
+.m.sel .bar{outline:2px solid var(--teal);outline-offset:1px}
+.stats{display:flex;flex-wrap:wrap;gap:24px;margin-top:14px;padding-top:12px;border-top:1px dashed var(--line);font-size:14px;color:var(--muted)}
+.stats b{color:var(--ink);font-weight:700}
+
+/* Filters */
+.filters{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px;align-items:center}
+.filters input,.filters select{border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:8px 10px;min-width:0}
+.filters input[type=search]{flex:1 1 220px}
+.chip{display:inline-flex;align-items:center;gap:6px;background:var(--teal-soft);color:var(--teal);border-radius:999px;padding:5px 6px 5px 12px;font-size:13px;font-weight:600}
+.chip button{border:0;background:none;color:inherit;cursor:pointer;font-size:15px;line-height:1;padding:0 4px}
+
+/* Table */
+.tablebox{background:var(--surface);border:1px solid var(--line);border-radius:12px;overflow-x:auto}
+table{width:100%;border-collapse:collapse;min-width:820px}
+th,td{text-align:left;padding:10px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-size:13px;font-weight:600;color:var(--muted);background:var(--surface);position:sticky;top:0}
+td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
+tbody tr:hover{background:color-mix(in srgb,var(--kraft-soft) 40%,transparent)}
+.lines{margin:0;padding:0;list-style:none}
+.lines li{display:flex;justify-content:space-between;gap:12px}
+.lines li span:last-child{color:var(--muted);font-variant-numeric:tabular-nums;white-space:nowrap}
+.status{display:inline-block;border-radius:999px;padding:2px 10px;font-size:12px;font-weight:600;white-space:nowrap}
+.s-Pending{background:var(--warn-soft);color:var(--warn)}
+.s-Paid{background:var(--teal-soft);color:var(--teal)}
+.s-Disputed{background:var(--bad-soft);color:var(--bad)}
+tfoot td{font-weight:700;border-bottom:0}
+.empty{padding:36px 18px;text-align:center;color:var(--muted)}
+.empty .btn{margin-top:10px}
+.rowact{white-space:nowrap}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+
+/* Dialog */
+dialog{border:0;border-radius:14px;padding:0;width:min(760px,calc(100vw - 24px));max-height:calc(100vh - 32px);background:var(--surface);color:var(--ink);box-shadow:0 20px 60px rgba(0,0,0,.25)}
+dialog::backdrop{background:rgba(20,28,30,.45)}
+.dlg-head{display:flex;justify-content:space-between;align-items:center;padding:16px 20px;border-bottom:1px solid var(--line)}
+.dlg-head h2{margin:0;font-size:20px;font-weight:700}
+.dlg-body{padding:16px 20px;overflow-y:auto;max-height:calc(100vh - 170px)}
+.dlg-foot{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:14px 20px;border-top:1px solid var(--line);flex-wrap:wrap}
+.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.field{display:flex;flex-direction:column;gap:4px}
+.field label{font-size:13px;color:var(--muted);font-weight:500}
+.field input,.field select,.field textarea{border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:8px 10px;width:100%}
+.derived{font-size:13px;color:var(--muted);margin-top:2px}
+.span2{grid-column:span 2}
+.span4{grid-column:span 4}
+h3{font-size:15px;margin:20px 0 8px;font-weight:700}
+.li-head,.li-row{display:grid;grid-template-columns:1fr 90px 110px 110px 34px;gap:8px;align-items:center}
+.li-head{font-size:12px;color:var(--muted);padding:0 2px 4px}
+.li-row{margin-bottom:6px}
+.li-row input{border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:8px 10px;width:100%;min-width:0}
+.li-row .amt{text-align:right;font-variant-numeric:tabular-nums}
+.li-row .x{border:0;background:none;color:var(--muted);cursor:pointer;font-size:18px;padding:4px}
+.li-row .x:hover{color:var(--bad)}
+.totals{margin-top:12px;margin-left:auto;width:min(320px,100%);font-variant-numeric:tabular-nums}
+.totals div{display:flex;justify-content:space-between;padding:4px 0}
+.totals .grand{border-top:2px solid var(--ink);margin-top:4px;padding-top:8px;font-size:18px;font-weight:800}
+.check{display:flex;align-items:center;gap:8px;font-size:14px;cursor:pointer}
+.field .check input{width:auto;margin:0;accent-color:var(--kraft)}
+.err{color:var(--bad);font-size:14px}
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--surface);padding:10px 16px;border-radius:8px;font-weight:600;opacity:0;pointer-events:none;transition:opacity .2s}
+.toast.show{opacity:1}
+
+@media (max-width:720px){
+  h1{font-size:24px}
+  .months{height:96px;gap:3px}
+  .m .amt{display:none}
+  .grid{grid-template-columns:1fr 1fr}
+  .span4{grid-column:span 2}
+  .li-head{display:none}
+  .li-row{grid-template-columns:1fr 1fr 34px;background:var(--bg);padding:8px;border-radius:8px}
+  .li-row .item{grid-column:1 / span 2}
+  .li-row .amt{grid-column:1 / span 2;text-align:left}
+}
+@media (prefers-reduced-motion: reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div>
+      <h1>Packaging order log</h1>
+      <p class="sub">Every order for tapes, peanuts, Million Parcel items and other packaging, in one place.</p>
+    </div>
+    <div class="actions">
+      <button class="btn" id="exportBtn" type="button">Export CSV</button>
+      <button class="btn primary" id="newBtn" type="button">New order</button>
+    </div>
+  </header>
+
+  <div class="banner" id="banner" hidden></div>
+
+  <section class="year" aria-label="Spend by month">
+    <div class="year-head">
+      <div class="year-total" id="yearTotal">S$0.00<small>spent this year</small></div>
+      <div class="year-pick"><label for="yearSel">Year</label><select id="yearSel"></select></div>
+    </div>
+    <div class="months" id="months"></div>
+    <div class="stats" id="stats"></div>
+  </section>
+
+  <div class="filters">
+    <input type="search" id="q" placeholder="Search item, supplier or PO number" aria-label="Search orders">
+    <select id="supSel" aria-label="Supplier"></select>
+    <span id="monthChip"></span>
+  </div>
+
+  <div class="tablebox">
+    <table>
+      <thead><tr>
+        <th>Year</th><th>Month</th><th>Date of order</th><th>Supplier</th><th>Items</th>
+        <th class="num">Qty</th><th class="num">Total payable</th><th><span class="sr">Actions</span></th>
+      </tr></thead>
+      <tbody id="tbody"></tbody>
+      <tfoot id="tfoot"></tfoot>
+    </table>
+    <div class="empty" id="empty" hidden></div>
+  </div>
+</div>
+
+<datalist id="itemList"></datalist>
+<datalist id="supList"></datalist>
+
+<dialog id="dlg" aria-labelledby="dlgTitle">
+  <form id="form" method="dialog" novalidate>
+    <div class="dlg-head"><h2 id="dlgTitle">New order</h2><button class="btn ghost" type="button" id="closeBtn" aria-label="Close">✕</button></div>
+    <div class="dlg-body">
+      <div class="grid">
+        <div class="field"><label for="fDate">Date of order</label><input type="date" id="fDate" required><div class="derived" id="fDerived"></div></div>
+        <div class="field span2"><label for="fSup">Supplier</label><input id="fSup" list="supList" placeholder="e.g. Million Parcel"></div>
+      </div>
+      <h3>Items</h3>
+      <div class="li-head"><span>Item</span><span>Qty</span><span>Unit price (S$)</span><span style="text-align:right">Amount</span><span></span></div>
+      <div id="lines"></div>
+      <button class="btn" type="button" id="addLine">Add item</button>
+      <div class="grid" style="margin-top:14px">
+        <div class="field span4"><label class="check"><input type="checkbox" id="fGst" checked> Supplier charges GST (9%)</label></div>
+        <div class="field span4"><label for="fNote">Notes</label><input id="fNote" placeholder="Optional"></div>
+      </div>
+      <div class="totals" id="totals"></div>
+      <p class="err" id="fErr" role="alert"></p>
+    </div>
+    <div class="dlg-foot">
+      <button class="btn danger" type="button" id="delBtn" hidden>Delete order</button>
+      <span></span>
+      <div class="actions"><button class="btn" type="button" id="cancelBtn">Cancel</button><button class="btn primary" type="submit" id="saveBtn">Save order</button></div>
+    </div>
+  </form>
+</dialog>
+
+<div class="toast" id="toast" role="status"></div>
+
+<script type="module">
+/* ===== Firebase setup =====
+   Paste your Firebase web config below (Firebase console > Project settings > Your apps).
+   Leave projectId empty to save orders in this browser only. */
+const firebaseConfig = {
+  apiKey: "",
+  authDomain: "",
+  projectId: "",
+  storageBucket: "",
+  messagingSenderId: "",
+  appId: ""
+};
+const COLLECTION_PREFIX = "packaging_";   // orders are stored in the "packaging_orders" collection
+
+window.__dbSetup = (async () => {
+ if (!firebaseConfig.projectId) return;
+  const { initializeApp } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js");
+  const { getFirestore, collection, doc, setDoc, deleteDoc, onSnapshot } =
+    await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js");
+  const fs = getFirestore(initializeApp(firebaseConfig));
+  const col = name => {
+    const path = COLLECTION_PREFIX + name;
+    return {
+      doc: id => {
+        const ref = id ? doc(fs, path, id) : doc(collection(fs, path));
+        return { set: d => setDoc(ref, d), delete: () => deleteDoc(ref) };
+      },
+      onSnapshot: (next, err) => onSnapshot(collection(fs, path),
+        snap => next({ docs: snap.docs.map(d => ({ id: d.id, data: () => d.data() })) }), err)
+    };
+  };
+  window.claude = { use: async n => n === "db" ? { collection: col } : null };
+})();
+</script>
+<script type="module">
+(function(){
+  const GST = 0.09;
+  const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+  const $ = id => document.getElementById(id);
+  const money = n => "S$" + (Number(n)||0).toLocaleString("en-SG",{minimumFractionDigits:2,maximumFractionDigits:2});
+  const r2 = n => Math.round((Number(n)||0)*100)/100;
+  const today = () => { const d=new Date(); return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0"); };
+
+  const state = { orders:[], year:String(new Date().getFullYear()), month:null, sup:"all", stat:"all", q:"", editing:null, loaded:false };
+  let db=null, canWrite=true, mode="loading", downloads=null;
+
+  function toast(msg){ const t=$("toast"); t.textContent=msg; t.classList.add("show"); clearTimeout(toast._t); toast._t=setTimeout(()=>t.classList.remove("show"),2200); }
+  function banner(msg){ const b=$("banner"); if(!msg){b.hidden=true;return;} b.textContent=msg; b.hidden=false; }
+
+  /* ---------- storage ---------- */
+  const LKEY="pkg-order-log-v1";
+  function localLoad(){ try{ return JSON.parse(localStorage.getItem(LKEY)||"[]"); }catch(e){ return []; } }
+  function localSave(list){ try{ localStorage.setItem(LKEY, JSON.stringify(list)); }catch(e){} }
+
+  async function saveOrder(obj, id){
+    if(mode==="db"){
+      const col=db.collection("orders");
+      const ref = id ? col.doc(id) : col.doc();
+      await ref.set(obj);
+    } else {
+      const list=localLoad();
+      if(id){ const i=list.findIndex(o=>o.id===id); if(i>=0) list[i]={...obj,id}; }
+      else list.push({...obj,id:"l"+Date.now().toString(36)+Math.random().toString(36).slice(2,6)});
+      localSave(list); state.orders=list; render();
+    }
+  }
+  async function deleteOrder(id){
+    if(mode==="db"){ await db.collection("orders").doc(id).delete(); }
+    else { const list=localLoad().filter(o=>o.id!==id); localSave(list); state.orders=list; render(); }
+  }
+
+  async function init(){
+    render();
+    if(window.__dbSetup){ try{ await window.__dbSetup; }catch(e){ console.error("Firebase setup failed", e); } }
+    const use = window.claude && typeof window.claude.use==="function" ? window.claude.use.bind(window.claude) : null;
+    if(use){
+      try{ db = await use("db"); }catch(e){ db=null; }
+      try{
+        const user = await use("user");
+        if(user){ const c = await user.can("data.write"); if(c===false) canWrite=false; }
+      }catch(e){}
+      use("downloads").then(d=>{ downloads=d; }).catch(()=>{});
+    }
+    if(db){
+      mode="db";
+      const timer=setTimeout(()=>{ if(!state.loaded){ banner("Orders are taking longer than usual to load. They'll appear here as soon as they arrive."); } },10000);
+      db.collection("orders").onSnapshot(snap=>{
+        clearTimeout(timer); state.loaded=true; banner(canWrite?"":"You can view orders here, but you don't have access to add or change them.");
+        state.orders = snap.docs.map(d=>({id:d.id, ...d.data()}));
+        render();
+      }, err=>{
+        clearTimeout(timer);
+        banner("Orders couldn't be loaded right now. Reopen the page to try again.");
+      });
+    } else {
+      mode="local"; state.loaded=true;
+      state.orders=localLoad();
+      banner("Orders are saved in this browser only. Add your Firebase config in index.html to share one log with your team.");
+      render();
+    }
+    if(!canWrite){ $("newBtn").disabled=true; }
+  }
+
+  /* ---------- derived data ---------- */
+  function ordersInYear(){ return state.orders.filter(o=>String(o.year)===state.year); }
+  function filtered(){
+    const q=state.q.trim().toLowerCase();
+    return ordersInYear().filter(o=>{
+      if(state.month && o.month!==state.month) return false;
+      if(state.sup!=="all" && (o.supplier||"")!==state.sup) return false;
+      if(state.stat!=="all" && (o.status||"Pending")!==state.stat) return false;
+      if(q){
+        const hay=[o.supplier,o.po,o.note,...(o.lines||[]).map(l=>l.item)].join(" ").toLowerCase();
+        if(!hay.includes(q)) return false;
+      }
+      return true;
+    }).sort((a,b)=> (b.date||"").localeCompare(a.date||"") || (b.createdAt||0)-(a.createdAt||0));
+  }
+  function knownItems(){
+    const map=new Map();
+    [...state.orders].sort((a,b)=>(a.date||"").localeCompare(b.date||"")).forEach(o=>(o.lines||[]).forEach(l=>{ if(l.item) map.set(l.item.trim(), Number(l.price)||0); }));
+    return map;
+  }
+
+  /* ---------- render ---------- */
+  function render(){
+    // years
+    const years=new Set(state.orders.map(o=>String(o.year)).filter(Boolean)); years.add(state.year); years.add(String(new Date().getFullYear()));
+    const ys=$("yearSel"); const yl=[...years].sort().reverse();
+    ys.replaceChildren(...yl.map(y=>{const o=document.createElement("option");o.value=y;o.textContent=y;if(y===state.year)o.selected=true;return o;}));
+
+    // suppliers
+    const sups=[...new Set(state.orders.map(o=>o.supplier).filter(Boolean))].sort();
+    const ss=$("supSel"); const cur=state.sup;
+    ss.replaceChildren(...[["all","All suppliers"],...sups.map(s=>[s,s])].map(([v,t])=>{const o=document.createElement("option");o.value=v;o.textContent=t;if(v===cur)o.selected=true;return o;}));
+    $("supList").replaceChildren(...sups.map(s=>{const o=document.createElement("option");o.value=s;return o;}));
+    $("itemList").replaceChildren(...[...knownItems().keys()].sort().map(s=>{const o=document.createElement("option");o.value=s;return o;}));
+
+    // months
+    const yo=ordersInYear();
+    const byM=Array(12).fill(0); yo.forEach(o=>{ const i=parseInt(o.month,10)-1; if(i>=0&&i<12) byM[i]+=Number(o.total)||0; });
+    const max=Math.max(...byM,1);
+    const mBox=$("months"); mBox.replaceChildren();
+    byM.forEach((v,i)=>{
+      const mm=String(i+1).padStart(2,"0");
+      const b=document.createElement("button"); b.type="button"; b.className="m"+(v>0?" has":"")+(state.month===mm?" sel":"");
+      b.setAttribute("aria-label",MONTHS[i]+" "+state.year+": "+money(v)+". Filter to this month.");
+      b.setAttribute("aria-pressed",state.month===mm?"true":"false");
+      const amt=document.createElement("span"); amt.className="amt"; amt.textContent=v>0?("$"+Math.round(v).toLocaleString("en-SG")):"";
+      const bar=document.createElement("span"); bar.className="bar"; bar.style.height=Math.max(3,Math.round(v/max*78))+"%";
+      const lbl=document.createElement("span"); lbl.className="lbl"; lbl.textContent=MONTHS[i];
+      b.append(amt,bar,lbl);
+      b.addEventListener("click",()=>{ state.month = state.month===mm?null:mm; render(); });
+      mBox.append(b);
+    });
+    const yt=byM.reduce((a,b)=>a+b,0);
+    const yEl=$("yearTotal"); yEl.replaceChildren(document.createTextNode(money(yt))); const sm=document.createElement("small"); sm.textContent="spent in "+state.year; yEl.append(sm);
+
+    // stats
+    const pending=yo.filter(o=>(o.status||"Pending")==="Pending").reduce((a,o)=>a+(Number(o.total)||0),0);
+    const itemSpend=new Map(); yo.forEach(o=>(o.lines||[]).forEach(l=>{ const k=(l.item||"").trim(); if(k) itemSpend.set(k,(itemSpend.get(k)||0)+(Number(l.qty)||0)*(Number(l.price)||0)); }));
+    let top="—"; let tv=0; itemSpend.forEach((v,k)=>{ if(v>tv){tv=v;top=k;} });
+    const monthsWith=byM.filter(v=>v>0).length;
+    const st=$("stats"); st.replaceChildren();
+    [["Orders",String(yo.length)],["Avg per month",money(monthsWith?yt/monthsWith:0)],["Biggest item spend",top+(tv?" ("+money(tv)+")":"")]]
+      .forEach(([k,v])=>{ const s=document.createElement("span"); s.append(document.createTextNode(k+" ")); const b=document.createElement("b"); b.textContent=v; s.append(b); st.append(s); });
+
+    // month chip
+    const chip=$("monthChip"); chip.replaceChildren();
+    if(state.month){ const c=document.createElement("span"); c.className="chip"; c.append(document.createTextNode(MONTHS[parseInt(state.month,10)-1]+" "+state.year)); const x=document.createElement("button"); x.type="button"; x.setAttribute("aria-label","Show all months"); x.textContent="×"; x.onclick=()=>{state.month=null;render();}; c.append(x); chip.append(c); }
+
+    // table
+    const rows=filtered(); const tb=$("tbody"); tb.replaceChildren();
+    let sumQ=0,sumT=0;
+    rows.forEach(o=>{
+      const tr=document.createElement("tr");
+      const td=(txt,cls)=>{const c=document.createElement("td"); if(cls)c.className=cls; if(txt!=null)c.textContent=txt; tr.append(c); return c;};
+      td(String(o.year||"")); td(MONTHS[parseInt(o.month,10)-1]||"");
+      td(o.date?new Date(o.date+"T00:00:00").toLocaleDateString("en-SG",{day:"2-digit",month:"short",year:"numeric"}):"");
+      const sc=td(null); const s1=document.createElement("div"); s1.textContent=o.supplier||"—"; sc.append(s1);
+      if(o.po){ const s2=document.createElement("div"); s2.style.color="var(--muted)"; s2.style.fontSize="13px"; s2.textContent=o.po; sc.append(s2); }
+      const ic=td(null); const ul=document.createElement("ul"); ul.className="lines";
+      let q=0;(o.lines||[]).forEach(l=>{ q+=Number(l.qty)||0; const li=document.createElement("li"); const a=document.createElement("span"); a.textContent=l.item||"—"; const b=document.createElement("span"); b.textContent="× "+(Number(l.qty)||0).toLocaleString("en-SG"); li.append(a,b); ul.append(li); });
+      ic.append(ul);
+      td(q.toLocaleString("en-SG"),"num"); td(money(o.total),"num");
+      const ac=td(null,"rowact"); const eb=document.createElement("button"); eb.type="button"; eb.className="btn ghost"; eb.textContent=canWrite?"Edit":"View"; eb.onclick=()=>openForm(o); ac.append(eb);
+      tb.append(tr); sumQ+=q; sumT+=Number(o.total)||0;
+    });
+    const tf=$("tfoot"); tf.replaceChildren();
+    if(rows.length){
+      const tr=document.createElement("tr");
+      const a=document.createElement("td"); a.colSpan=5; a.textContent=rows.length+" order"+(rows.length>1?"s":"")+" shown";
+      const b=document.createElement("td"); b.className="num"; b.textContent=sumQ.toLocaleString("en-SG");
+      const c=document.createElement("td"); c.className="num"; c.textContent=money(sumT);
+      const d=document.createElement("td"); d.colSpan=1;
+      tr.append(a,b,c,d); tf.append(tr);
+    }
+    const em=$("empty"); em.replaceChildren();
+    if(!rows.length){
+      em.hidden=false;
+      const p=document.createElement("div");
+      if(!state.loaded){ p.textContent="Loading orders…"; em.append(p); }
+      else if(yo.length){ p.textContent="No orders match these filters."; em.append(p); }
+      else { p.textContent="No orders logged for "+state.year+" yet. Add your first order to start tracking spend."; em.append(p);
+        if(canWrite){ const b=document.createElement("button"); b.className="btn primary"; b.type="button"; b.textContent="New order"; b.onclick=()=>openForm(null); em.append(b); } }
+    } else em.hidden=true;
+  }
+
+  /* ---------- form ---------- */
+  function lineRow(l){
+    const row=document.createElement("div"); row.className="li-row";
+    const item=document.createElement("input"); item.className="item"; item.setAttribute("list","itemList"); item.placeholder="e.g. OPP tape 48mm"; item.setAttribute("aria-label","Item"); item.value=l?.item||"";
+    const qty=document.createElement("input"); qty.type="number"; qty.min="0"; qty.step="1"; qty.inputMode="decimal"; qty.placeholder="Qty"; qty.setAttribute("aria-label","Quantity"); qty.value=l?.qty??"";
+    const price=document.createElement("input"); price.type="number"; price.min="0"; price.step="0.01"; price.inputMode="decimal"; price.placeholder="0.00"; price.setAttribute("aria-label","Unit price in SGD"); price.value=l?.price??"";
+    const amt=document.createElement("div"); amt.className="amt";
+    const x=document.createElement("button"); x.type="button"; x.className="x"; x.setAttribute("aria-label","Remove item"); x.textContent="×";
+    x.onclick=()=>{ row.remove(); if(!$("lines").children.length) $("lines").append(lineRow()); calc(); };
+    item.addEventListener("change",()=>{ const p=knownItems().get(item.value.trim()); if(p!=null && price.value==="") { price.value=p; calc(); } });
+    [qty,price].forEach(i=>i.addEventListener("input",calc));
+    row.append(item,qty,price,amt,x);
+    return row;
+  }
+  function readLines(){
+    return [...$("lines").children].map(r=>{ const [i,q,p]=r.querySelectorAll("input"); return {item:i.value.trim(), qty:q.value===""?null:Number(q.value), price:p.value===""?null:Number(p.value), _row:r}; });
+  }
+  function calc(){
+    const lines=readLines(); let sub=0;
+    lines.forEach(l=>{ const a=(l.qty||0)*(l.price||0); sub+=a; l._row.querySelector(".amt").textContent=money(a); });
+    const other=0;
+    const gst=$("fGst").checked?r2((sub+other)*GST):0;
+    const total=r2(sub+other+gst);
+    const t=$("totals"); t.replaceChildren();
+    [["Items subtotal",money(sub)],["GST",money(gst)]].forEach(([k,v])=>{const d=document.createElement("div");const a=document.createElement("span");a.textContent=k;const b=document.createElement("span");b.textContent=v;d.append(a,b);t.append(d);});
+    const g=document.createElement("div"); g.className="grand"; const a=document.createElement("span"); a.textContent="Total payable"; const b=document.createElement("span"); b.textContent=money(total); g.append(a,b); t.append(g);
+    return {sub:r2(sub),other:r2(other),gst,total};
+  }
+  function derived(){
+    const v=$("fDate").value;
+    $("fDerived").textContent = v ? ("Year "+v.slice(0,4)+", "+MONTHS[parseInt(v.slice(5,7),10)-1]) : "";
+  }
+  function openForm(o){
+    state.editing=o?o.id:null;
+    $("dlgTitle").textContent=o?(canWrite?"Edit order":"Order details"):"New order";
+    $("fDate").value=o?.date||today(); $("fSup").value=o?.supplier||"";
+    $("fGst").checked=o?(o.gstOn!==false):true; $("fNote").value=o?.note||"";
+    const L=$("lines"); L.replaceChildren(); (o?.lines?.length?o.lines:[null]).forEach(l=>L.append(lineRow(l)));
+    $("delBtn").hidden=!(o&&canWrite); $("saveBtn").hidden=!canWrite; $("addLine").hidden=!canWrite;
+    $("fErr").textContent=""; derived(); calc();
+    $("dlg").showModal();
+  }
+  function closeForm(){ $("dlg").close(); state.editing=null; }
+
+  $("form").addEventListener("submit", async e=>{
+    e.preventDefault(); if(!canWrite) return;
+    const date=$("fDate").value;
+    const lines=readLines().filter(l=>l.item||l.qty||l.price).map(({item,qty,price})=>({item,qty:qty||0,price:price||0}));
+    if(!date){ $("fErr").textContent="Add the date of order."; $("fDate").focus(); return; }
+    if(!lines.length){ $("fErr").textContent="Add at least one item."; return; }
+    if(lines.some(l=>!l.item)){ $("fErr").textContent="Every row needs an item name."; return; }
+    if(lines.some(l=>!(l.qty>0))){ $("fErr").textContent="Every item needs a quantity above 0."; return; }
+    const t=calc();
+    const existing=state.orders.find(o=>o.id===state.editing);
+    const obj={ date, year:date.slice(0,4), month:date.slice(5,7), supplier:$("fSup").value.trim(),
+      lines, other:0, gstOn:$("fGst").checked, subtotal:t.sub, gst:t.gst, total:t.total,
+      note:$("fNote").value.trim(), createdAt:existing?.createdAt||Date.now(), updatedAt:Date.now() };
+    const btn=$("saveBtn"); btn.disabled=true; btn.textContent="Saving…";
+    try{
+      await saveOrder(obj, state.editing);
+      closeForm(); state.year=obj.year; toast("Order saved"); render();
+    }catch(err){
+      const code=err&&err.code;
+      if(code==="invalid_argument"){ canWrite=false; $("newBtn").disabled=true; $("fErr").textContent="The order couldn't be saved. Check your Firestore rules allow writes to packaging_orders."; }
+      else if(code==="quota_exceeded"){ $("fErr").textContent="The order log is full. Export to CSV and remove old orders to make room."; }
+      else { $("fErr").textContent="The order couldn't be saved. Check your connection and save again."; }
+    }finally{ btn.disabled=false; btn.textContent="Save order"; }
+  });
+  $("delBtn").addEventListener("click", async ()=>{
+    if(!state.editing) return;
+    if(!confirm("Delete this order? This can't be undone.")) return;
+    try{ await deleteOrder(state.editing); closeForm(); toast("Order deleted"); }
+    catch(e){ $("fErr").textContent="The order couldn't be deleted. Try again."; }
+  });
+  $("addLine").onclick=()=>{ const r=lineRow(); $("lines").append(r); r.querySelector("input").focus(); };
+  $("fDate").addEventListener("input",derived);
+  $("fGst").addEventListener("change",calc);
+  $("newBtn").onclick=()=>openForm(null);
+  $("closeBtn").onclick=closeForm; $("cancelBtn").onclick=closeForm;
+
+  /* ---------- filters ---------- */
+  $("yearSel").onchange=e=>{ state.year=e.target.value; state.month=null; render(); };
+  $("supSel").onchange=e=>{ state.sup=e.target.value; render(); };
+  $("q").addEventListener("input",e=>{ state.q=e.target.value; render(); });
+
+  /* ---------- export ---------- */
+  $("exportBtn").onclick=async ()=>{
+    const rows=filtered();
+    if(!rows.length){ toast("No orders to export"); return; }
+    const esc=v=>{ const s=v==null?"":String(v); return /[",\n]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s; };
+    const out=[["Year","Month","Date of order","Supplier","Item","Qty","Unit price (SGD)","Line amount (SGD)","GST (SGD)","Total payable (SGD)","Notes"]];
+    rows.forEach(o=>(o.lines||[]).forEach((l,i)=>out.push([o.year,MONTHS[parseInt(o.month,10)-1]||"",o.date,o.supplier,l.item,l.qty,r2(l.price).toFixed(2),r2((l.qty||0)*(l.price||0)).toFixed(2),
+      i===0?r2(o.gst).toFixed(2):"", i===0?r2(o.total).toFixed(2):"", i===0?o.note:""])));
+    const csv="\ufeff"+out.map(r=>r.map(esc).join(",")).join("\r\n");
+    const name="packaging-orders-"+state.year+(state.month?"-"+state.month:"")+".csv";
+    if(downloads){
+      try{ await downloads.save({filename:name, data:csv}); toast("Export ready"); }
+      catch(e){ if(e&&e.code!=="dismissed"&&e.code!=="declined") toast("Export couldn't be saved"); }
+    } else {
+      try{ const a=document.createElement("a"); a.href=URL.createObjectURL(new Blob([csv],{type:"text/csv"})); a.download=name; document.body.append(a); a.click(); a.remove(); }
+      catch(e){ toast("Export isn't available here"); }
+    }
+  };
+
+  init();
+})();
+</script>
+</body>
+</html>
